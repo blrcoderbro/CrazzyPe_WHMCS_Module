@@ -5,7 +5,7 @@ require_once '../../../includes/gatewayfunctions.php';
 require_once '../../../includes/invoicefunctions.php';
 
 // Get the Gateway Module Name
-$gatewayModuleName = 'cutepe';
+$gatewayModuleName = 'crazzype';
 
 // Fetch Gateway Configuration Parameters
 $gatewayParams = getGatewayVariables($gatewayModuleName);
@@ -35,9 +35,9 @@ if($status !='success'){
 }
 
 
-// Verify Order Status via CutePe API
-$apiUrl = 'https://merchants.cutepe.com/api/orders/check-order-status';
-$apiKey = $gatewayParams['cutepe_api_key'];
+// Verify Order Status via CrazzyPe API
+$apiUrl = 'https://merchants.crazzype.com/api/orders/check-order-status';
+$apiKey = $gatewayParams['crazzype_api_key'];
 
 $data = array('order_id' => $orderId);
 $options = array(

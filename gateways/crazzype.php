@@ -1,8 +1,8 @@
 <?php
 /**
- * CUTEPE PAYMENT MODULE FOR WHMCS
- * @author CutePe
- * @Website https://cutepe.com/
+ * CrazzyPe PAYMENT MODULE FOR WHMCS
+ * @author CrazzyPe
+ * @Website https://crazzype.com/
  * @license GPL V.1 
  * @Disclaimer Please do not temper the code 
  * settings.
@@ -13,56 +13,56 @@ if (!defined("WHMCS")) {
     die("This file cannot be accessed directly");
 }
 
-function cutepe_MetaData()
+function crazzype_MetaData()
 {
     return array(
-        'DisplayName' => 'CutePe Gateway',
+        'DisplayName' => 'CrazzyPe Gateway',
         'APIVersion' => '1.1', // Use API Version 1.1
         'DisableLocalCreditCardInput' => true,
         'TokenisedStorage' => false,
     );
 }
 
-function cutepe_config() {
+function crazzype_config() {
     global $CONFIG;
-    $webhookUrl = $CONFIG['SystemURL'] . '/modules/gateways/callback/cutepe_callback.php';
+    $webhookUrl = $CONFIG['SystemURL'] . '/modules/gateways/callback/crazzype_callback.php';
 
     $configarray = array(
-        "FriendlyName" => array("Type" => "System", "Value" => "CutePe"),
-        "Description" => array("Type" => "System", "Value" => "CutePe Payment Gateway for WHMCS"),
+        "FriendlyName" => array("Type" => "System", "Value" => "CrazzyPe"),
+        "Description" => array("Type" => "System", "Value" => "CrazzyPe Payment Gateway for WHMCS"),
         "Version" => array("Type" => "System", "Value" => "1.1"),
         "SignUp" => array(
             "FriendlyName" => "Important",
             "Type" => "comment",
-            "Description" => "First <a href='https://cutepe.com/register' target='_blank'>Signup</a> for a CutePe account OR <a href='https://cutepe.com/login' target='_blank'>Login</a> if you have an existing account."
+            "Description" => "First <a href='https://crazzype.com/register' target='_blank'>Signup</a> for a CrazzyPe account OR <a href='https://crazzype.com/login' target='_blank'>Login</a> if you have an existing account."
         ),
         'enableWebhook' => array(
             'FriendlyName' => 'Enable Webhook',
             'Type' => 'yesno',
             'Default' => false,
-            'Description' => 'Enable CutePe Webhook <a href="https://cutepe.com/dashboard/webhooks">here</a> with the URL listed below. <br/><br><span>'.htmlspecialchars($webhookUrl).'</span><br/>',
+            'Description' => 'Enable CrazzyPe Webhook <a href="https://crazzype.com/dashboard/webhooks">here</a> with the URL listed below. <br/><br><span>'.htmlspecialchars($webhookUrl).'</span><br/>',
         ),
-        "cutepe_api_key" => array("FriendlyName" => "CutePe API Key", "Type" => "password", "Size" => "50", "Placeholder" => "YOUR_API_KEY"),
+        "crazzype_api_key" => array("FriendlyName" => "CrazzyPe API Key", "Type" => "password", "Size" => "50", "Placeholder" => "YOUR_API_KEY"),
         "merchant_key" => array("FriendlyName" => "Merchant Key", "Type" => "text", "Size" => "30", "Placeholder" => "paytm, phonepe, etc."),
     );
     return $configarray;
 }
 
 
-function cutepe_link($params) {
+function crazzype_link($params) {
     // Display the Pay Now button
     $code = '<div style="text-align: center; margin-top: 20px;">';
     $code .= '<form method="POST" action="" style="display: inline-block;">';
     $code .= '<input type="hidden" name="generate_order" value="1">';
-    $code .= '<button type="submit" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">Pay Now with CutePe</button>';
+    $code .= '<button type="submit" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">Pay Now with CrazzyPe</button>';
     $code .= '</form>';
     $code .= '</div>';
 
     // Check if the form is submitted to generate the order
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_order'])) {
         // Module configuration parameters
-        $api_url = "https://merchants.cutepe.com/api/orders/create-order";
-        $api_key = $params['cutepe_api_key'];
+        $api_url = "https://merchants.crazzype.com/api/orders/create-order";
+        $api_key = $params['crazzype_api_key'];
         $merchant_key = $params['merchant_key'];
 
         // Invoice and client details
@@ -75,8 +75,8 @@ function cutepe_link($params) {
 
         // Callback URL
         $callback_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[SCRIPT_NAME]";
-        $callback_url = str_replace('cart.php', 'modules/gateways/callback/cutepe_callback.php', $callback_url);
-        $callback_url = str_replace('viewinvoice.php', 'modules/gateways/callback/cutepe_callback.php', $callback_url);
+        $callback_url = str_replace('cart.php', 'modules/gateways/callback/crazzype_callback.php', $callback_url);
+        $callback_url = str_replace('viewinvoice.php', 'modules/gateways/callback/crazzype_callback.php', $callback_url);
 
         // API request payload
         $data = array(

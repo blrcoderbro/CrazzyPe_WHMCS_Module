@@ -1,13 +1,13 @@
 {
     "schema": "1.0",
     "type": "whmcs-gateways",
-    "name": "cutepe",
+    "name": "crazzype",
     "license": "MIT",
     "category": "payments",
     "description": {
-        "name": "CutePe Gateway",
+        "name": "CrazzyPe Gateway",
         "tagline": "UPI Payment Gateway to Collect Payments",
-        "long": "This Module will help you to collect payments via CutePe QR payment system.",
+        "long": "This Module will help you to collect payments via CrazzyPe QR payment system.",
         "features": [
             "Instant Payment",
             "Realtime Response",
@@ -20,16 +20,16 @@
         "filename": "logo.png"
     },
     "support": {
-        "homepage": "https:\/\/cutepe.com\/", 
-        "learn_more": "https:\/\/cutepe.com\/", 
-        "email": "support@cutepe.com", 
-        "support_url": "https:\/\/cutepe.com\/contact",
-        "docs_url": "https:\/\/cutepe.com\/dashboard"
+        "homepage": "https:\/\/crazzype.com\/", 
+        "learn_more": "https:\/\/crazzype.com\/", 
+        "email": "support@crazzype.com", 
+        "support_url": "https:\/\/crazzype.com\/contact",
+        "docs_url": "https:\/\/crazzype.com\/dashboard"
     },
     "authors": [
         {
-            "name": "A3LRK Technologies Pvt. Ltd.",
-            "homepage": "https:\/\/cutepe.com\/"
+            "name": "CrazzyPe",
+            "homepage": "https:\/\/crazzype.com\/"
         }
     ]
 }
