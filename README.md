@@ -2,6 +2,45 @@
 
 Integrate CrazzyPe payment gateway with WHMCS to accept payments securely.
 
+### v4 Update
+## Database Tables
+
+The module creates a tracking table `mod_crazzype_orders` to maintain order-to-invoice mapping and prevent duplicate payments.
+
+### Manual Installation of Database Table
+
+If automatic creation fails during activation, run this SQL manually:
+
+```sql
+CREATE TABLE IF NOT EXISTS `mod_crazzype_orders` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `invoice_id` int(10) unsigned NOT NULL,
+  `order_id` varchar(100) NOT NULL,
+  `transaction_id` varchar(100) DEFAULT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `currency` varchar(3) NOT NULL DEFAULT 'INR',
+  `status` enum('pending','processing','success','failed','cancelled') NOT NULL DEFAULT 'pending',
+  `gateway_response` text,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `order_id` (`order_id`),
+  KEY `invoice_id` (`invoice_id`),
+  KEY `transaction_id` (`transaction_id`),
+  KEY `status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+## Key Features (Production-Grade)
+
+✅ **WHMCS Standard Helpers** - Uses `checkCbInvoiceID()` and `checkCbTransID()`  
+✅ **Amount Verification** - Compares paid amount with invoice total  
+✅ **Idempotency** - Prevents duplicate payments via order tracking table  
+✅ **Cryptographically Secure Order IDs** - Uses `random_bytes()` instead of weak md5  
+✅ **Paid Invoice Guard** - Skips processing if invoice already paid  
+✅ **Proper Error Handling** - Comprehensive validation and logging  
+✅ **Webhook Safe** - Supports both GET and POST callbacks
+
 ### What's New in Version 2.0
 
 - **SignUp & Login Added**: Users can now sign up and log in directly through the CrazzyPe module interface.

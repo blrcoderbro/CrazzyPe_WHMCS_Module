@@ -1,7 +1,6 @@
 <?php
 /**
  * CrazzyPe Gateway Activation Script
- * This runs automatically when the gateway is activated in WHMCS
  */
 
 if (!defined("WHMCS")) {
@@ -11,16 +10,24 @@ if (!defined("WHMCS")) {
 use WHMCS\Database\Capsule;
 
 try {
+    // Create order tracking table
+    $schemaFile = __DIR__ . '/schema.sql';
+    
+    if (file_exists($schemaFile)) {
+        $sql = file_get_contents($schemaFile);
+        Capsule::connection()->getPdo()->exec($sql);
+        logActivity("CrazzyPe: Order tracking table created/verified");
+    }
+
     // Check if gateway entries already exist
     $existingCount = Capsule::table('tblpaymentgateways')
         ->where('gateway', 'crazzype')
         ->count();
 
     if ($existingCount > 0) {
-        // Gateway already configured
         return [
             'status' => 'info',
-            'description' => 'CrazzyPe gateway is already configured in the database.'
+            'description' => 'CrazzyPe gateway is already configured.'
         ];
     }
 
@@ -35,11 +42,11 @@ try {
         Capsule::table('tblpaymentgateways')->insert($setting);
     }
 
-    logActivity("CrazzyPe Payment Gateway activated and configured successfully");
+    logActivity("CrazzyPe Payment Gateway activated successfully");
 
     return [
         'status' => 'success',
-        'description' => 'CrazzyPe gateway has been successfully configured in the database.'
+        'description' => 'CrazzyPe gateway configured successfully.'
     ];
 
 } catch (Exception $e) {
@@ -47,6 +54,6 @@ try {
     
     return [
         'status' => 'error',
-        'description' => 'Failed to configure CrazzyPe gateway: ' . $e->getMessage()
+        'description' => 'Activation failed: ' . $e->getMessage()
     ];
 }
