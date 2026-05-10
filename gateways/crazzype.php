@@ -27,7 +27,8 @@ function crazzype_MetaData()
 function crazzype_config()
 {
     global $CONFIG;
-    $webhookUrl = rtrim($CONFIG['SystemURL'], '/') . '/modules/gateways/callback/crazzype_callback.php';
+    $systemUrl = (is_array($CONFIG) && !empty($CONFIG['SystemURL'])) ? $CONFIG['SystemURL'] : '';
+    $webhookUrl = rtrim($systemUrl, '/') . '/modules/gateways/callback/crazzype_callback.php';
 
     return [
         'FriendlyName' => [
@@ -74,9 +75,6 @@ function crazzype_config()
     ];
 }
 
-/**
- * API request helper with proper error handling
- */
 function crazzype_api_post($url, $apiKey, $payload, $debugMode = false)
 {
     $ch = curl_init($url);
@@ -102,7 +100,7 @@ function crazzype_api_post($url, $apiKey, $payload, $debugMode = false)
 
     if ($error) {
         if ($debugMode) {
-            logTransaction('crazzype', ['curl_error' => $error, 'payload' => $payload], "API Connection Error");
+            logTransaction('crazzype', ['curl_error' => $error], "API Connection Error");
         }
         return [
             'success' => false,
@@ -138,14 +136,12 @@ function crazzype_link($params)
     $merchantKey = trim($params['merchant_key'] ?? '');
     $debugMode = $params['debug_mode'] ?? false;
 
-    // Validation
     if (empty($apiKey) || empty($merchantKey)) {
         return '<div style="padding:15px;background:#fee;border:1px solid #c33;border-radius:4px;color:#c33;margin:10px 0;">
             <strong>Configuration Error:</strong> Please configure CrazzyPe API Key and Merchant Key in gateway settings.
         </div>';
     }
 
-    // Payment button HTML
     $buttonHtml = '
     <div style="text-align:center;margin:20px 0;">
         <form method="POST" action="">
@@ -175,32 +171,25 @@ function crazzype_link($params)
         </form>
     </div>';
 
-    // Handle payment initiation
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['crazzype_initiate_payment'])) {
         
         $invoiceId = $params['invoiceid'];
         $amount = number_format($params['amount'], 2, '.', '');
-        
-        // Generate cryptographically secure order ID
         $orderId = $invoiceId . '_' . bin2hex(random_bytes(16));
         
-        // Build callback URL
         $systemUrl = rtrim($params['systemurl'], '/');
         $callbackUrl = $systemUrl . '/modules/gateways/callback/crazzype_callback.php';
         
-        // Prepare customer data with validation
         $firstName = trim($params['clientdetails']['firstname'] ?? '');
         $lastName = trim($params['clientdetails']['lastname'] ?? '');
         $customerName = trim($firstName . ' ' . $lastName) ?: 'Customer';
         $customerEmail = filter_var($params['clientdetails']['email'] ?? '', FILTER_VALIDATE_EMAIL) ?: '';
         
-        // Validate phone number
         $customerPhone = preg_replace('/[^0-9]/', '', $params['clientdetails']['phonenumber'] ?? '');
         if (strlen($customerPhone) !== 10) {
             $customerPhone = '9999999999';
         }
         
-        // Store order in tracking table BEFORE API call
         try {
             Capsule::table('mod_crazzype_orders')->insert([
                 'invoice_id' => $invoiceId,
@@ -220,7 +209,6 @@ function crazzype_link($params)
             </div>' . $buttonHtml;
         }
         
-        // Prepare API payload
         $payload = [
             'txn_id' => $orderId,
             'amount' => $amount,
@@ -235,7 +223,6 @@ function crazzype_link($params)
             'udf3' => ''
         ];
 
-        // Call CrazzyPe API
         $result = crazzype_api_post(
             'https://merchants.crazzype.com/api/orders/create-order',
             $apiKey,
@@ -243,11 +230,9 @@ function crazzype_link($params)
             $debugMode
         );
 
-        // Handle API errors
         if (!$result['success']) {
             $errorMsg = $result['error'] ?? 'Unknown error';
             
-            // Update order status
             Capsule::table('mod_crazzype_orders')
                 ->where('order_id', $orderId)
                 ->update([
@@ -265,10 +250,8 @@ function crazzype_link($params)
 
         $responseData = $result['data'];
         
-        // Check API response
         if (isset($responseData['status']) && $responseData['status'] === 'success' && !empty($responseData['payment_url'])) {
             
-            // Update order with payment URL
             Capsule::table('mod_crazzype_orders')
                 ->where('order_id', $orderId)
                 ->update([
@@ -281,12 +264,10 @@ function crazzype_link($params)
                 logTransaction('crazzype', $responseData, "Order Created - Redirecting to Payment");
             }
             
-            // Redirect to payment page
             header('Location: ' . $responseData['payment_url']);
             exit;
         }
 
-        // API returned error
         $errorMessage = $responseData['message'] ?? 'Failed to create payment order';
         
         Capsule::table('mod_crazzype_orders')

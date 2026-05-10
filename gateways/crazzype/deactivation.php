@@ -8,8 +8,6 @@ if (!defined("WHMCS")) {
     die("This file cannot be accessed directly");
 }
 
-use WHMCS\Database\Capsule;
-
 try {
     // Note: We don't delete gateway settings on deactivation
     // This preserves API keys and configuration if admin re-enables later
@@ -21,11 +19,11 @@ try {
         'description' => 'CrazzyPe gateway has been deactivated. Your settings have been preserved.'
     ];
 
-} catch (Exception $e) {
+} catch (\Throwable $e) {
     logActivity("CrazzyPe Deactivation Error: " . $e->getMessage());
-    
+
     return [
         'status' => 'error',
-        'description' => 'Error during deactivation: ' . $e->getMessage()
+        'description' => 'Deactivation failed. Check the activity log for details.',
     ];
 }

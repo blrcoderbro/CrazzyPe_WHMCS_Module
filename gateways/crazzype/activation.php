@@ -1,7 +1,4 @@
 <?php
-/**
- * CrazzyPe Gateway Activation Script
- */
 
 if (!defined("WHMCS")) {
     die("This file cannot be accessed directly");
@@ -10,50 +7,54 @@ if (!defined("WHMCS")) {
 use WHMCS\Database\Capsule;
 
 try {
-    // Create order tracking table
     $schemaFile = __DIR__ . '/schema.sql';
-    
-    if (file_exists($schemaFile)) {
+    if (is_readable($schemaFile)) {
         $sql = file_get_contents($schemaFile);
-        Capsule::connection()->getPdo()->exec($sql);
-        logActivity("CrazzyPe: Order tracking table created/verified");
+        if ($sql !== false) {
+            $sql = trim($sql);
+            if ($sql !== '') {
+                Capsule::connection()->getPdo()->exec($sql);
+            }
+        }
     }
 
-    // Check if gateway entries already exist
-    $existingCount = Capsule::table('tblpaymentgateways')
-        ->where('gateway', 'crazzype')
-        ->count();
-
-    if ($existingCount > 0) {
-        return [
-            'status' => 'info',
-            'description' => 'CrazzyPe gateway is already configured.'
-        ];
-    }
-
-    // Insert required gateway configuration
     $requiredSettings = [
         ['gateway' => 'crazzype', 'setting' => 'name', 'value' => 'crazzype', 'order' => 1],
         ['gateway' => 'crazzype', 'setting' => 'type', 'value' => '1', 'order' => 0],
         ['gateway' => 'crazzype', 'setting' => 'visible', 'value' => 'on', 'order' => 0],
     ];
 
-    foreach ($requiredSettings as $setting) {
-        Capsule::table('tblpaymentgateways')->insert($setting);
+    $insertedAny = false;
+    foreach ($requiredSettings as $row) {
+        $exists = Capsule::table('tblpaymentgateways')
+            ->where('gateway', $row['gateway'])
+            ->where('setting', $row['setting'])
+            ->exists();
+
+        if (!$exists) {
+            Capsule::table('tblpaymentgateways')->insert($row);
+            $insertedAny = true;
+        }
     }
 
-    logActivity("CrazzyPe Payment Gateway activated successfully");
+    logActivity('CrazzyPe Payment Gateway: activation completed');
+
+    if (!$insertedAny) {
+        return [
+            'status' => 'info',
+            'description' => 'CrazzyPe gateway is already configured.',
+        ];
+    }
 
     return [
         'status' => 'success',
-        'description' => 'CrazzyPe gateway configured successfully.'
+        'description' => 'CrazzyPe gateway activated successfully.',
     ];
+} catch (\Throwable $e) {
+    logActivity('CrazzyPe Activation Error: ' . $e->getMessage());
 
-} catch (Exception $e) {
-    logActivity("CrazzyPe Activation Error: " . $e->getMessage());
-    
     return [
         'status' => 'error',
-        'description' => 'Activation failed: ' . $e->getMessage()
+        'description' => 'Activation failed. Check Utilities → Logs → Activity Log for details.',
     ];
 }
