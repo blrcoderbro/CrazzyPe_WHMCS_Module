@@ -1,39 +1,81 @@
 <?php
 if (!defined("WHMCS")) {
-    die("This hook cannot be run directly");
+    die("This file cannot be accessed directly");
 }
 
 use WHMCS\Database\Capsule;
 
-add_hook('AfterModuleCreate', 1, function($vars) {
-    // Ensure this hook only applies to your specific payment gateway module
-    if ($vars['serviceid'] && $vars['module'] == 'crazzype') {
-        // Check if the settings already exist
-        $existingSettings = Capsule::table('tblpaymentgateways')
-            ->where('gateway', 'crazzype')
-            ->pluck('setting');
+/**
+ * Ensure CrazzyPe gateway settings are properly initialized in database
+ * This runs when the module is activated in WHMCS admin panel
+ */
+add_hook('AfterModuleActivate', 1, function($vars) {
+    if ($vars['module'] !== 'crazzype') {
+        return;
+    }
 
-        $settingsToInsert = [
-            ['gateway' => 'crazzype', 'setting' => 'name', 'value' => 'CrazzyPe', 'order' => 1],
-            ['gateway' => 'crazzype', 'setting' => 'type', 'value' => 'Payments', 'order' => 0],
+    try {
+        // Check if gateway already exists
+        $existingGateway = Capsule::table('tblpaymentgateways')
+            ->where('gateway', 'crazzype')
+            ->where('setting', 'name')
+            ->first();
+
+        if ($existingGateway) {
+            logActivity("CrazzyPe gateway already configured in database");
+            return;
+        }
+
+        // Insert required gateway settings
+        $settings = [
+            ['gateway' => 'crazzype', 'setting' => 'name', 'value' => 'crazzype', 'order' => 1],
+            ['gateway' => 'crazzype', 'setting' => 'type', 'value' => '1', 'order' => 0],
             ['gateway' => 'crazzype', 'setting' => 'visible', 'value' => 'on', 'order' => 0],
-            ['gateway' => 'crazzype', 'setting' => 'crazzype_api_key', 'value' => '', 'order' => 0],
-            ['gateway' => 'crazzype', 'setting' => 'merchant_key', 'value' => '', 'order' => 0],
-            ['gateway' => 'crazzype', 'setting' => 'crazzype_module_auth_token', 'value' => '', 'order' => 0],
-            ['gateway' => 'crazzype', 'setting' => 'convertto', 'value' => '', 'order' => 0],
         ];
 
-        // Filter out settings that already exist
-        $settingsToInsert = array_filter($settingsToInsert, function($setting) use ($existingSettings) {
-            return !in_array($setting['setting'], $existingSettings);
-        });
-
-        // Insert new settings
-        if (!empty($settingsToInsert)) {
-            Capsule::table('tblpaymentgateways')->insert($settingsToInsert);
-            logActivity("Payment gateway 'crazzype' settings updated automatically."); // Log for debugging
-        } else {
-            logActivity("Payment gateway 'crazzype' settings already exist. No update needed."); // Log for debugging
+        foreach ($settings as $setting) {
+            Capsule::table('tblpaymentgateways')->insert($setting);
         }
+
+        logActivity("CrazzyPe Payment Gateway: Database entries created successfully");
+
+    } catch (Exception $e) {
+        logActivity("CrazzyPe Payment Gateway Error: " . $e->getMessage());
+    }
+});
+
+/**
+ * Alternative hook - runs on any gateway configuration save
+ * Ensures settings persist even if activation hook doesn't trigger
+ */
+add_hook('PaymentGatewayConfigSave', 1, function($vars) {
+    if ($vars['gateway'] !== 'crazzype') {
+        return;
+    }
+
+    try {
+        // Verify core settings exist
+        $coreSettings = ['name', 'type', 'visible'];
+        
+        foreach ($coreSettings as $setting) {
+            $exists = Capsule::table('tblpaymentgateways')
+                ->where('gateway', 'crazzype')
+                ->where('setting', $setting)
+                ->exists();
+
+            if (!$exists) {
+                $value = ($setting === 'name') ? 'crazzype' : (($setting === 'type') ? '1' : 'on');
+                
+                Capsule::table('tblpaymentgateways')->insert([
+                    'gateway' => 'crazzype',
+                    'setting' => $setting,
+                    'value' => $value,
+                    'order' => ($setting === 'name') ? 1 : 0
+                ]);
+            }
+        }
+
+    } catch (Exception $e) {
+        logActivity("CrazzyPe Config Save Error: " . $e->getMessage());
     }
 });

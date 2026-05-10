@@ -16,13 +16,10 @@
             "Supports Webhook"
         ]
     },
-    "logo": {
-        "filename": "logo.png"
-    },
     "support": {
-        "homepage": "https:\/\/crazzype.com\/", 
-        "learn_more": "https:\/\/crazzype.com\/", 
-        "email": "support@crazzype.com", 
+        "homepage": "https:\/\/crazzype.com\/",
+        "learn_more": "https:\/\/crazzype.com\/",
+        "email": "support@crazzype.com",
         "support_url": "https:\/\/crazzype.com\/contact",
         "docs_url": "https:\/\/crazzype.com\/dashboard"
     },

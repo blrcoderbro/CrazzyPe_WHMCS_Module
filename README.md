@@ -12,48 +12,55 @@ Integrate CrazzyPe payment gateway with WHMCS to accept payments securely.
 ## Features
 
 - Easy setup and integration.
-- Secure payment processing.
+- Secure payment processing (server-side order verification, optional HMAC when `callback_secret` is set).
 - Automatic invoice updates on successful payments.
+- Idempotent callbacks: duplicate transaction IDs do not apply payment twice or inflate client credit.
 - Handles payment failures gracefully.
 
 ## Installation
 
-1. Upload and extract the zip file to your WHMCS installation's `modules` directory.
+1. Copy the contents of this repository into your WHMCS installation:
+   - `gateways/crazzype.php` → `modules/gateways/crazzype.php`
+   - `gateways/callback/crazzype.php` → `modules/gateways/callback/crazzype.php`
+   - `gateways/callback/crazzype_callback.php` → `modules/gateways/callback/crazzype_callback.php` (legacy shim; optional if you only use the canonical URL)
+   - `gateways/crazzype/` (e.g. `whmcs.json`) → `modules/gateways/crazzype/`
 
-2. Enable CrazzyPe module in WHMCS admin panel.
+2. Enable the CrazzyPe module in **System Settings → Payment Gateways**.
 
-    ![Finding CrazzyPe in Apps](https://i.ibb.co/pBj8N6LM/2025-07-12-15-15.png)
+3. Enter **API Key**, **Merchant Key**, and optionally **Callback secret** (see below).
 
-    ![CrazzyPe WHMCS Module Activation in WHMCS](https://i.ibb.co/8Dz4K041/2025-07-12-15-17.png)
+4. In the CrazzyPe merchant dashboard, set the callback URL to the **canonical** endpoint:
 
-3. Enter API Key, Merchant Key in Module Settings.
+   `https://yourdomain.com/path/to/whmcs/modules/gateways/callback/crazzype.php`
 
-    ![CrazzyPe WHMCS Module Settings](https://i.ibb.co/Y4DdbXs2/2025-07-12-15-21.png)
+   If you already use the legacy filename, this still works:
 
-4. Copy and paste callback URL into CrazzyPe Merchant Dashboard.
-
+   `https://yourdomain.com/path/to/whmcs/modules/gateways/callback/crazzype_callback.php`
 
 ## Configuration
 
-- **API Key**: Obtain from CrazzyPe Merchant Dashboard.
-- **Merchant Key**: Provided by CrazzyPe.
-- **API URL**: Endpoint for transaction verification.
+- **API Key**: From the CrazzyPe Merchant Dashboard.
+- **Merchant Key**: Provided by CrazzyPe (e.g. paytm, phonepe).
+- **Callback secret (optional)**: If CrazzyPe documents a shared secret for callback hashing, set it here. The module attempts `HMAC-SHA256(order_id|status)` and `HMAC-SHA256(order_id)`; adjust in code if their algorithm differs. If left empty, callbacks are still validated via the CrazzyPe **check-order-status** API and amount checks, but the redirect `hash` parameter is not cryptographically verified.
 
-## Callback Handling
+## Callback handling
 
-CrazzyPe sends transaction status updates via callbacks. Use `crazzpe_callback.php` to process these updates.
+CrazzyPe returns the customer to your callback URL with parameters such as `status`, `order_id`, and `hash`. The handler merges **GET**, **POST**, and **JSON body** (for webhooks), verifies status with CrazzyPe’s API, matches the paid amount to the invoice balance, and applies the payment once per gateway transaction ID.
 
-### Example Callback URL
+Use the same transaction reference in webhooks and browser returns so duplicate notifications stay idempotent.
+
+### Example callback URL
 
 ```
-https://yourdomain.com/modules/gateways/callback/crazzype_callback.php?status=success&order_id=12345&hash=abc123
+https://yourdomain.com/modules/gateways/callback/crazzype.php?status=success&order_id=12345_1234567890&hash=abc123
 ```
 
 ## Troubleshooting
 
-- Missing parameters: Ensure `status`, `order_id`, and `hash` are included.
-- Invalid invoice ID: Verify invoice exists in WHMCS.
-- API errors: Check server connectivity and API endpoint.
+- **Missing parameters**: Ensure `status` and `order_id` are present (and `hash` if you enabled `callback_secret`).
+- **Invalid invoice ID**: Confirm the invoice exists in WHMCS; `order_id` must start with the numeric invoice ID (e.g. `12345_timestamp`).
+- **Amount mismatch**: Gateway amount must match the invoice balance within a small tolerance (see gateway log).
+- **Duplicate payments / client credit**: Ensure you are on a version that deduplicates by transaction ID; do not run two different callback URLs that both apply payments for the same event without shared idempotency.
 
 ## Support
 
